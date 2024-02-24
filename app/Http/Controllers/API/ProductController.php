@@ -3,51 +3,67 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Helpers\ApiResponse;
+use App\Helpers\FileHelper;
+use App\Http\Requests\StoreProductFormRequest;
 
 class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::all();
-        foreach ($products as $product) {
-            $product->created_from = $product->created_at->diffForHumans();
-        }
-        return response()->json($products);
+        $products = Product::with('imageable')->get();
+
+        $products->transform(function ($product) {
+            FileHelper::setImagePaths($product);
+            return $product;
+        });
+
+        return ApiResponse::success(['products' => $products]);
     }
 
-    public function store(Request $request)
+    public function store(StoreProductFormRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-        ]);
+        $validatedData = $request->validated();
 
-        $product = Product::create($request->all());
-        return response()->json($product, 201);
+        $product = Product::create($validatedData);
+
+        FileHelper::uploadImages($request, $product);
+
+        return ApiResponse::success([
+
+            'message' => 'Product created successfully',
+            'product' => $product
+        ]);
     }
 
     public function show($id)
     {
         $product = Product::findOrFail($id);
-        $product->created_from = $product->created_at->diffForHumans();
-        return response()->json($product);
+        FileHelper::setImagePaths($product);
+
+        return ApiResponse::success(['product' => $product]);
     }
 
-    public function update(Request $request, $id)
+    public function update(StoreProductFormRequest $request, $id)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-        ]);
+        try {
+            $validatedData = $request->validated();
+            $product = Product::findOrFail($id);
+            $product->update($validatedData);
 
-        $product = Product::findOrFail($id);
-        $product->update($validatedData);
+            return ApiResponse::success([
 
-        return response()->json(['message' => 'Product deleted successfully']);
+                'message' => 'Product updated successfully'
+            ]);
+        } catch (\Exception $e) {
+            return ApiResponse::error([
+
+                'success' => false,
+                'message' => 'Failed to update product.',
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     public function destroy($id)
@@ -55,6 +71,9 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         $product->delete();
 
-        return response()->json(['message' => 'Product deleted successfully']);
+        return ApiResponse::success([
+
+            'message' => 'Product deleted successfully'
+        ]);
     }
 }

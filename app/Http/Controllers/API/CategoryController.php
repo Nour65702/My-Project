@@ -2,58 +2,79 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreCategoryFormRequest;
 use App\Models\Category;
+use App\Helpers\FileHelper;
 
 class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
-        foreach ($categories as $category) {
-            $category->created_from = $category->created_at->diffForHumans();
-        }
-        return response()->json($categories);
+        $categories = Category::with(['imageable', 'products' => function ($query) {
+            $query->where('price', '>=', 150)
+                ->with(['user' => function ($query) {
+                    $query->where('name', 'like', '%a%');
+                }]);
+        }])->get();
+
+        $categories->transform(function ($category) {
+            FileHelper::setImagePath($category);
+            return $category;
+        });
+
+        return ApiResponse::success(['categories' => $categories]);
     }
 
-    public function store(Request $request)
+    public function store(StoreCategoryFormRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
+        $validatedData = $request->validated();
+        $category = Category::create($validatedData);
+
+        FileHelper::uploadImage($request, $category);
+
+        return ApiResponse::success([
+
+            'message' => 'Category created successfully',
+            'category' => $category
         ]);
-
-        $category = Category::create($request->all());
-        return response()->json($category, 201);
     }
-
 
     public function show($id)
     {
-        $category = Category::findOrFail($id);
-        $category->created_from = $category->created_at->diffForHumans();
-        return response()->json($category);
+        $category = Category::with(['products' => function ($query) {
+            $query->where('price', '>=', 150)
+                ->with(['user' => function ($query) {
+                    $query->where('name', 'like', '%a%');
+                }]);
+        }])->findOrFail($id);
+
+        FileHelper::setImagePath($category);
+
+        return ApiResponse::success(['category' => $category]);
     }
 
-    public function update(Request $request, $id)
+    public function update(StoreCategoryFormRequest $request, $id)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-        ]);
-
         $category = Category::findOrFail($id);
-        $category->update($validatedData);
+        $category->update($request->validated());
 
-        return response()->json(['message' => 'Category updated successfully']);
+        return ApiResponse::success([
+
+            'message' => 'Category Updated successfully',
+            'category' => $category
+        ]);
     }
-
-
 
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
         $category->delete();
 
-        return response()->json(['message' => 'Category deleted successfully']);
+        return ApiResponse::success([
+
+            'message' => 'Category deleted successfully'
+        ]);
     }
 }

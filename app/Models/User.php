@@ -42,4 +42,16 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    protected $appends = ['created_from'];
+
+    public function getCreatedFromAttribute()
+    {
+        return $this->created_at->diffForHumans();
+    }
+
+    public function imageable()
+    {
+        return $this->morphOne(Images::class, 'imageable');
+    }
 }

@@ -3,47 +3,59 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\User;
+use App\Helpers\ApiResponse;
+use App\Helpers\FileHelper;
+use App\Http\Requests\StoreUserFormRequest;
 
 class UserController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $users = User::all();
+
+        $users->transform(function ($user) {
+            FileHelper::setImagePath($user);
+            return $user;
+        });
+
+        return ApiResponse::success(['users' => $users]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(StoreUserFormRequest $request)
     {
-        //
+        $validatedData = $request->validated();
+
+        $user = User::create($validatedData);
+
+        FileHelper::uploadImage($request, $user);
+
+        return ApiResponse::success(['message' => 'User created successfully', 'user' => $user]);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        FileHelper::setImagePath($user);
+
+        return ApiResponse::success(['user' => $user]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(StoreUserFormRequest $request, string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        $user->update($request->validated());
+
+        FileHelper::uploadImage($request, $user);
+
+        return ApiResponse::success(['message' => 'User Updated successfully', 'user' => $user]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return ApiResponse::success(['message' => 'User deleted successfully']);
     }
 }
