@@ -7,23 +7,24 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCategoryFormRequest;
 use App\Models\Category;
 use App\Helpers\FileHelper;
+use App\Services\CategoryService;
 
 class CategoryController extends Controller
 {
+    protected $categoryService;
+
+    public function __construct(CategoryService $categoryService)
+    {
+        $this->categoryService = $categoryService;
+    }
+
     public function index()
     {
-        $categories = Category::with(['imageable', 'products' => function ($query) {
-            $query->where('price', '>=', 150)
-                ->with(['user' => function ($query) {
-                    $query->where('name', 'like', '%a%');
-                }]);
-        }])->get();
-
+        $categories = $this->categoryService->getFilteredCategories();
         $categories->transform(function ($category) {
-            FileHelper::setImagePath($category);
+            FileHelper::getImageUrl($category->image);
             return $category;
         });
-
         return ApiResponse::success(['categories' => $categories]);
     }
 
@@ -31,11 +32,9 @@ class CategoryController extends Controller
     {
         $validatedData = $request->validated();
         $category = Category::create($validatedData);
-
-        FileHelper::uploadImage($request, $category);
+        FileHelper::getImageUrl($category->image);
 
         return ApiResponse::success([
-
             'message' => 'Category created successfully',
             'category' => $category
         ]);
@@ -43,15 +42,8 @@ class CategoryController extends Controller
 
     public function show($id)
     {
-        $category = Category::with(['products' => function ($query) {
-            $query->where('price', '>=', 150)
-                ->with(['user' => function ($query) {
-                    $query->where('name', 'like', '%a%');
-                }]);
-        }])->findOrFail($id);
-
-        FileHelper::setImagePath($category);
-
+        $category = $this->categoryService->getCategoryWithFilteredChildren($id);
+        FileHelper::getImageUrl($category->image);
         return ApiResponse::success(['category' => $category]);
     }
 
@@ -60,8 +52,8 @@ class CategoryController extends Controller
         $category = Category::findOrFail($id);
         $category->update($request->validated());
 
-        return ApiResponse::success([
 
+        return ApiResponse::success([
             'message' => 'Category Updated successfully',
             'category' => $category
         ]);
@@ -73,7 +65,6 @@ class CategoryController extends Controller
         $category->delete();
 
         return ApiResponse::success([
-
             'message' => 'Category deleted successfully'
         ]);
     }

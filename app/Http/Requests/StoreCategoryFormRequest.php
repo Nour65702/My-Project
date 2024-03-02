@@ -21,6 +21,8 @@ class StoreCategoryFormRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'parent_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'image' => ['required', 'image', 'dimensions:max_width=3840,max_height=2160',  'mimes:gif,png,jpg', 'max:2700'],
         ];
     }
 }

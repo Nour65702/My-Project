@@ -15,7 +15,7 @@ class UserController extends Controller
         $users = User::all();
 
         $users->transform(function ($user) {
-            FileHelper::setImagePath($user);
+            FileHelper::getImageUrl($user);
             return $user;
         });
 
@@ -28,7 +28,7 @@ class UserController extends Controller
 
         $user = User::create($validatedData);
 
-        FileHelper::uploadImage($request, $user);
+        FileHelper::getImageUrl($request, $user);
 
         return ApiResponse::success(['message' => 'User created successfully', 'user' => $user]);
     }
@@ -36,7 +36,7 @@ class UserController extends Controller
     public function show(string $id)
     {
         $user = User::findOrFail($id);
-        FileHelper::setImagePath($user);
+        FileHelper::getImageUrl($user);
 
         return ApiResponse::success(['user' => $user]);
     }
@@ -46,7 +46,7 @@ class UserController extends Controller
         $user = User::findOrFail($id);
         $user->update($request->validated());
 
-        FileHelper::uploadImage($request, $user);
+        FileHelper::getImageUrl($request, $user);
 
         return ApiResponse::success(['message' => 'User Updated successfully', 'user' => $user]);
     }

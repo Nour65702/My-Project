@@ -2,82 +2,30 @@
 
 namespace App\Helpers;
 
-use App\Models\User;
-use App\Models\Product;
-use App\Models\Images;
-use Illuminate\Support\Facades\Validator;
-
 class FileHelper
 {
-    public static function uploadImage($request, $user)
-    {
-        $validator = Validator::make($request->all(), [
-            'image' => 'required|image|dimensions:max_width=3840,max_height=2160|mimes:gif,png,jpg|max:2700',
-        ]);
+    public static function uploadFile($file,$path,$imageType=''){
+        $uploadPath = public_path('uploads/'.$path);
 
-        if ($validator->fails()) {
-            return $validator->errors();
+        // Ensure the directory exists
+        if (!file_exists($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
         }
-
-        if ($request->hasFile('image')) {
-            $filename = self::storeImage($request->file('image'), User::class, $user->id);
-            $user->setAttribute('image_path', asset('images/' . $filename));
+        $fileName = uniqid() . '_' . time().'.png';
+        if ($imageType === 'base64'){
+            $data = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $file));
+            file_put_contents($uploadPath . '/' . $fileName, $data);
+            return $uploadPath . '/' . $fileName;
         }
+        if (!is_string($file) && $file && $file->isValid()) {
+            $file->move($uploadPath, $fileName);
+            return $uploadPath . '/' . $fileName;
+        }
+        return '';
     }
-
-    public static function setImagePath($user)
+    public static function getImageUrl($filePath)
     {
-        $imagePath = $user->imageable ? 'images/' . $user->imageable->filename : null;
-        unset($user->imageable);
-        $user->setAttribute('image_path', asset($imagePath));
-    }
-
-    public static function uploadImages($request, $product)
-    {
-        $validator = Validator::make($request->all(), [
-            'images.*' => 'required|image|dimensions:max_width=3840,max_height=2160|mimes:gif,png,jpg|max:2700',
-        ]);
-
-        if ($validator->fails()) {
-            return $validator->errors();
-        }
-
-        if ($request->hasFile('images')) {
-            $imagePaths = [];
-
-            foreach ($request->file('images') as $image) {
-                $filename = self::storeImage($image, Product::class, $product->id);
-                $imagePaths[] = asset('images/' . $filename);
-            }
-
-            $product->setAttribute('image_paths', $imagePaths);
-        }
-    }
-
-    public static function setImagePaths($product)
-    {
-        $imagePaths = [];
-
-        foreach ($product->imageable as $image) {
-            $imagePath = 'images/' . $image->filename;
-            $imagePaths[] = asset($imagePath);
-        }
-
-        $product->setAttribute('image_paths', $imagePaths);
-        unset($product->imageable);
-    }
-
-    private static function storeImage($image, $type, $id)
-    {
-        $filename = time() . '_' . $image->getClientOriginalName();
-        $image->move(public_path('images'), $filename);
-
-        Images::create([
-            'filename' => $filename,
-            'imageable_id' => $id,
-            'imageable_type' => $type,
-        ]);
-
-        return $filename;
+        $filePath = str_replace('\\', '/', $filePath);
+        return url('/storage/' . $filePath);
     }
 }

@@ -15,7 +15,7 @@ class ProductController extends Controller
         $products = Product::with('imageable')->get();
 
         $products->transform(function ($product) {
-            FileHelper::setImagePaths($product);
+            FileHelper::getImageUrl($product);
             return $product;
         });
 
@@ -28,7 +28,7 @@ class ProductController extends Controller
 
         $product = Product::create($validatedData);
 
-        FileHelper::uploadImages($request, $product);
+        FileHelper::getImageUrl($request, $product);
 
         return ApiResponse::success([
 
@@ -40,7 +40,7 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::findOrFail($id);
-        FileHelper::setImagePaths($product);
+        FileHelper::getImageUrl($product);
 
         return ApiResponse::success(['product' => $product]);
     }

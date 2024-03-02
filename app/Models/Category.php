@@ -10,7 +10,7 @@ class Category extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name'
+        'name', 'parent_id','image'
     ];
 
     protected $appends = ['created_from'];
@@ -28,5 +28,13 @@ class Category extends Model
     public function imageable()
     {
         return $this->morphOne(Images::class, 'imageable');
+    }
+    public function parent()
+    {
+        return $this->belongsTo(Category::class, 'parent_id');
+    }
+    public function children()
+    {
+        return $this->hasMany(Category::class, 'parent_id')->with('children.products');
     }
 }
