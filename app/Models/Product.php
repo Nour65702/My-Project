@@ -4,13 +4,15 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\ProductAddedNotification;
 
 class Product extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'name', 'description', 'price', 'category_id', 'user_id'
+        'name', 'description', 'price', 'category_id', 'user_id','status'
     ];
 
     protected $appends = ['created_from'];
@@ -34,4 +36,5 @@ class Product extends Model
     {
         return $this->morphMany(Images::class, 'imageable');
     }
+   
 }

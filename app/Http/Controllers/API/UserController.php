@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Role;
 use App\Helpers\ApiResponse;
 use App\Helpers\FileHelper;
 use App\Http\Requests\StoreUserFormRequest;
@@ -57,5 +58,9 @@ class UserController extends Controller
         $user->delete();
 
         return ApiResponse::success(['message' => 'User deleted successfully']);
+    }
+    public function roles(){
+        $role = Role::all();
+        return ApiResponse::success($role);
     }
 }

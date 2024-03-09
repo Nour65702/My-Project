@@ -25,5 +25,6 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('users', UserController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('categories', CategoryController::class);
-    Route::post('/products/images', [ProductController::class, 'productImages']);
+    Route::get('/roles', [UserController::class, 'roles']);
+    Route::put('/products/{id}/update-status', [ProductController::class, 'updateStatus']);
 });

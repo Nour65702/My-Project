@@ -6,10 +6,27 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Helpers\ApiResponse;
 use App\Helpers\FileHelper;
+use App\Notifications\ProductStatusNotification;
+use App\Services\ProductNotificationService;
+use App\Services\ProductService;
 use App\Http\Requests\StoreProductFormRequest;
+use Illuminate\Http\Request;
+
+
 
 class ProductController extends Controller
 {
+
+    private $notificationService;
+    private $productService;
+
+    public function __construct(ProductNotificationService $notificationService, ProductService $productService)
+    {
+        $this->notificationService = $notificationService;
+        $this->productService = $productService;
+    }
+
+
     public function index()
     {
         $products = Product::with('imageable')->get();
@@ -22,20 +39,25 @@ class ProductController extends Controller
         return ApiResponse::success(['products' => $products]);
     }
 
+
     public function store(StoreProductFormRequest $request)
     {
-        $validatedData = $request->validated();
+        try {
+            $productData = array_merge($request->validated(), ['status' => 'pending']);
+            $product = Product::create($productData);
 
-        $product = Product::create($validatedData);
 
-        FileHelper::getImageUrl($request, $product);
+            $this->notificationService->notifyAdminAboutProduct($product);
 
-        return ApiResponse::success([
-
-            'message' => 'Product created successfully',
-            'product' => $product
-        ]);
+            return response()->json([
+                'product' => $product,
+                'message' => 'The product added successfully. Please wait for admin approval.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
+
 
     public function show($id)
     {
@@ -66,6 +88,7 @@ class ProductController extends Controller
         }
     }
 
+
     public function destroy($id)
     {
         $product = Product::findOrFail($id);
@@ -75,5 +98,25 @@ class ProductController extends Controller
 
             'message' => 'Product deleted successfully'
         ]);
+    }
+
+
+    public function updateStatus(Request $request, $id)
+    {
+        try {
+            $product = Product::findOrFail($id);
+
+            $request->validate([
+                'status' => 'required|in:approved,rejected',
+            ]);
+
+            $this->productService->updateStatus($product, $request->status);
+
+            return response()->json([
+                'message' => 'Product status updated successfully.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }
