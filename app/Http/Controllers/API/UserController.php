@@ -4,47 +4,39 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\Role;
 use App\Helpers\ApiResponse;
 use App\Helpers\FileHelper;
 use App\Http\Requests\StoreUserFormRequest;
+
+
 
 class UserController extends Controller
 {
     public function index()
     {
         $users = User::all();
-
+        $this->authorize('viewAny', User::class);
         $users->transform(function ($user) {
             FileHelper::getImageUrl($user);
             return $user;
         });
-
         return ApiResponse::success(['users' => $users]);
     }
 
-    public function store(StoreUserFormRequest $request)
+
+    public function show(User $user)
     {
-        $validatedData = $request->validated();
+        $this->authorize('view', $user);
 
-        $user = User::create($validatedData);
-
-        FileHelper::getImageUrl($request, $user);
-
-        return ApiResponse::success(['message' => 'User created successfully', 'user' => $user]);
-    }
-
-    public function show(string $id)
-    {
-        $user = User::findOrFail($id);
         FileHelper::getImageUrl($user);
 
         return ApiResponse::success(['user' => $user]);
     }
 
-    public function update(StoreUserFormRequest $request, string $id)
+    public function update(StoreUserFormRequest $request, User $user)
     {
-        $user = User::findOrFail($id);
+        $this->authorize('update', $user);
+
         $user->update($request->validated());
 
         FileHelper::getImageUrl($request, $user);
@@ -52,15 +44,12 @@ class UserController extends Controller
         return ApiResponse::success(['message' => 'User Updated successfully', 'user' => $user]);
     }
 
-    public function destroy(string $id)
+    public function destroy(User $user)
     {
-        $user = User::findOrFail($id);
+        $this->authorize('delete', $user);
+
         $user->delete();
 
         return ApiResponse::success(['message' => 'User deleted successfully']);
-    }
-    public function roles(){
-        $role = Role::all();
-        return ApiResponse::success($role);
     }
 }

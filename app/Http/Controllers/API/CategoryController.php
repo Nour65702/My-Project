@@ -20,6 +20,7 @@ class CategoryController extends Controller
 
     public function index()
     {
+        $this->authorize('viewAny', Category::class);
         $categories = $this->categoryService->getFilteredCategories();
         $categories->transform(function ($category) {
             FileHelper::getImageUrl($category->image);
@@ -30,6 +31,7 @@ class CategoryController extends Controller
 
     public function store(StoreCategoryFormRequest $request)
     {
+        $this->authorize('create', Category::class);
         $validatedData = $request->validated();
         $category = Category::create($validatedData);
         FileHelper::getImageUrl($category->image);
@@ -42,6 +44,8 @@ class CategoryController extends Controller
 
     public function show($id)
     {
+        $category = Category::findOrFail($id);
+        $this->authorize('view', $category);
         $category = $this->categoryService->getCategoryWithFilteredChildren($id);
         FileHelper::getImageUrl($category->image);
         return ApiResponse::success(['category' => $category]);
@@ -50,6 +54,7 @@ class CategoryController extends Controller
     public function update(StoreCategoryFormRequest $request, $id)
     {
         $category = Category::findOrFail($id);
+        $this->authorize('update', $category);
         $category->update($request->validated());
 
 
@@ -62,6 +67,8 @@ class CategoryController extends Controller
     public function destroy($id)
     {
         $category = Category::findOrFail($id);
+        $this->authorize('delete', $category);
+
         $category->delete();
 
         return ApiResponse::success([

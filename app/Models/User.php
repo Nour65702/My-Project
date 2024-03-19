@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\Product;
 
+
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role'
     ];
 
     /**
@@ -67,16 +69,5 @@ class User extends Authenticatable
     {
         return $this->roles->contains('name', $role);
     }
-    // public function assignRole($role)
-    // {
-    //     $role = Role::where('name', $role)->first();
-
-    //     if ($role) {
-    //         $this->roles()->attach($role);
-    //     }
-    // }
-    public function isAdmin()
-    {
-        return $this->roles()->where('name', 'admin')->exists();
-    }
+   
 }

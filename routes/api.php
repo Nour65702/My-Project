@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\ProductController;
 use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\UserController;
-
+use App\Http\Controllers\Auth\AuthController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -27,4 +27,7 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('categories', CategoryController::class);
     Route::get('/roles', [UserController::class, 'roles']);
     Route::put('/products/{id}/update-status', [ProductController::class, 'updateStatus']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'logout']);
 });
